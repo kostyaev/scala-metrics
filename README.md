@@ -4,12 +4,3 @@ Researching [metrics-scala](https://github.com/erikvanoosten/metrics-scala) whic
 
 	make sbt
 	./sbt run
-
-## Requirements ##
-
-[Vagrantfile for Graphite + StatsD](https://github.com/Jimdo/vagrant-statsd-graphite-puppet)
-
-	git clone https://github.com/Jimdo/vagrant-statsd-graphite-puppet.git
-	cd vagrant-statsd-graphite-puppet
-	vagrant up
-	open http://localhost:8080/
