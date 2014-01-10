@@ -6,6 +6,7 @@ import java.util.Random
 import com.codahale.metrics.{JmxReporter, ConsoleReporter}
 import nl.grons.metrics.scala.{InstrumentedBuilder, CheckedBuilder, Timer, Counter, Histogram, Meter}
 
+import scala.concurrent.ops.spawn
 
 object Metrics extends App {
 
@@ -47,7 +48,15 @@ object Metrics extends App {
 
     new TimerExample().longRunningInstrumentedMethod()
 
-    new RandomNumberGaugeExample().fetchingRandomNumber()
+    // spawn a new thread that generates a new random number every second
+    spawn {
+      val gaugeExample = new RandomNumberGaugeExample()
+
+      while (true) {
+        Thread.sleep(1000)
+        gaugeExample.fetchingRandomNumber()
+      }
+    }
 
     // TODO print healthCheckResults
     new HealthCheckExample().check()
