@@ -3,10 +3,12 @@ package nl.elmar.metrics
 import com.codahale.metrics.health.HealthCheck
 import java.util.concurrent.TimeUnit
 import java.util.Random
-import com.codahale.metrics.{JmxReporter, ConsoleReporter}
+import com.codahale.metrics.{MetricFilter, JmxReporter, ConsoleReporter}
 import nl.grons.metrics.scala.{InstrumentedBuilder, CheckedBuilder, Timer, Counter, Histogram, Meter}
 
 import scala.concurrent.ops.spawn
+import com.codahale.metrics.graphite.{Graphite, GraphiteReporter}
+import java.net.InetSocketAddress
 
 object Metrics extends App {
 
@@ -32,6 +34,20 @@ object Metrics extends App {
    */
   JmxReporter.forRegistry(metricRegistry).build().start()
 
+  /**
+   * The {{{GraphiteReporter}}} will report a graphite instance
+   */
+  val hostedGraphiteService = new Graphite(new InetSocketAddress("carbon.hostedgraphite.com", 2003))
+  val apiKey = "<API-KEY>"
+
+  val graphiteReporter = GraphiteReporter.forRegistry(metricRegistry)
+    .prefixedWith(apiKey)
+    .convertRatesTo(TimeUnit.SECONDS)
+    .convertDurationsTo(TimeUnit.MILLISECONDS)
+    .filter(MetricFilter.ALL)
+    .build(hostedGraphiteService)
+  graphiteReporter.start( 5, TimeUnit.SECONDS)
+
   //
   // Metrics
   //
@@ -48,13 +64,37 @@ object Metrics extends App {
 
     new TimerExample().longRunningInstrumentedMethod()
 
-    // spawn a new thread that generates a new random number every second
+    // spawn a new thread that generates a new random number every half a second
     spawn {
       val gaugeExample = new RandomNumberGaugeExample()
 
       while (true) {
-        Thread.sleep(1000)
+        Thread.sleep(500)
         gaugeExample.fetchingRandomNumber()
+      }
+    }
+
+    // spawn a new thread that randomly generates get requests
+    spawn {
+      val meterExample = new RestEndpointMeterExample()
+      val random = new Random()
+      val maxTimeBetweenRequest = 200
+
+      while (true) {
+        Thread.sleep(Math.abs(random.nextInt()%maxTimeBetweenRequest))
+        meterExample.get("/")
+      }
+    }
+
+    // spawn a new thread that randomly generates post requests
+    spawn {
+      val meterExample = new RestEndpointMeterExample()
+      val random = new Random()
+      val maxTimeBetweenRequest = 200
+
+      while (true) {
+        Thread.sleep(Math.abs(random.nextInt()%maxTimeBetweenRequest))
+        meterExample.post("/")
       }
     }
 
@@ -64,16 +104,6 @@ object Metrics extends App {
     val histogramExample = new SearchResultsHistogramExample()
     histogramExample.search("foo")
     histogramExample.search("bar")
-
-    val meterExample = new RestEndpointMeterExample()
-    meterExample.get("/")
-
-    Thread.sleep(500)
-    meterExample.get("/")
-    meterExample.get("/")
-    meterExample.post("/")
-    Thread.sleep(1000)
-    meterExample.get("/")
 
     val cache = new CacheCounterExample()
     cache.put("foo", "bar")
@@ -129,7 +159,7 @@ class RandomNumberGaugeExample() extends Instrumented {
 
   def fetchingRandomNumber(): Int = {
     metrics.gauge("random-number") {
-      new Random().nextInt() % 1000
+      Math.abs(new Random().nextInt() % 1000)
     }.value
   }
 }
@@ -182,15 +212,14 @@ class RestEndpointMeterExample() extends Instrumented {
 
   private[this] val postRequests: Meter = metrics.meter("post-requests", "requests")
 
+  def get(endpoint: String) = {
+    // do stuff
+    getRequests.mark()
+  }
 
   def post(endpoint: String) = {
     // do stuff
     postRequests.mark()
-  }
-
-  def get(endpoint: String) = {
-    // do stuff
-    getRequests.mark()
   }
 
 }
