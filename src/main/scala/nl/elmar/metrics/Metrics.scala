@@ -1,9 +1,12 @@
 package nl.elmar.metrics
 
 import com.codahale.metrics.health.HealthCheck
-import com.codahale.metrics._
 import java.util.concurrent.TimeUnit
 import java.util.Random
+import com.codahale.metrics.{JmxReporter, ConsoleReporter, MetricRegistry}
+import nl.grons.metrics.scala.Timer
+
+import com.codahale.metrics.Counter
 
 object Metrics extends App {
 
@@ -50,16 +53,10 @@ object Metrics extends App {
    */
   val evictions: Counter = metrics.counter(MetricRegistry.name(classOf[HealthCheckDemo], "cache-evictions"))
 
-  /**
-   * A timer measures the rate how often a piece of code was called but also the distribution of the duration
-   */
-  val request: Timer = metrics.timer(MetricRegistry.name(classOf[ArithmeticDemoOperation], "calculation-duration"))
-
   /** produce some data */
   def run() {
-    val ctx: Timer.Context = request.time()
+
     new ArithmeticDemoOperation().calculateSomeMagic()
-    ctx.stop()
 
     evictions.inc()
     Thread.sleep(1500)
@@ -73,12 +70,22 @@ object Metrics extends App {
 
   // run the app
   run()
+
 }
 
-class ArithmeticDemoOperation {
+trait Instrumented extends nl.grons.metrics.scala.InstrumentedBuilder {
+  val metricRegistry = Metrics.metrics
+}
+
+class ArithmeticDemoOperation extends Instrumented {
+
+  /**
+   * A timer measures the rate how often a piece of code was called but also the distribution of the duration
+   */
+  private[this] val running: Timer = metrics.timer("calculation-duration")
 
   /** some long running calculation */
-  def calculateSomeMagic() {
+  def calculateSomeMagic() = running.time {
     Thread.sleep(5000)
   }
 }
