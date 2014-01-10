@@ -4,7 +4,7 @@ import com.codahale.metrics.health.HealthCheck
 import java.util.concurrent.TimeUnit
 import java.util.Random
 import com.codahale.metrics.{JmxReporter, ConsoleReporter}
-import nl.grons.metrics.scala.{InstrumentedBuilder, CheckedBuilder, Timer, Counter, Histogram}
+import nl.grons.metrics.scala.{InstrumentedBuilder, CheckedBuilder, Timer, Counter, Histogram, Meter}
 
 
 object Metrics extends App {
@@ -55,6 +55,16 @@ object Metrics extends App {
     val histogramExample = new SearchResultsHistogramExample()
     histogramExample.search("foo")
     histogramExample.search("bar")
+
+    val meterExample = new RestEndpointMeterExample()
+    meterExample.get("/")
+
+    Thread.sleep(500)
+    meterExample.get("/")
+    meterExample.get("/")
+    meterExample.post("/")
+    Thread.sleep(1000)
+    meterExample.get("/")
 
     val cache = new CacheCounterExample()
     cache.put("foo", "bar")
@@ -153,6 +163,25 @@ class SearchResultsHistogramExample() extends Instrumented {
     // search for stuff
     val numberOfResults = new Random().nextInt() % 50
     resultCounts += numberOfResults
+  }
+
+}
+
+class RestEndpointMeterExample() extends Instrumented {
+
+  private[this] val getRequests: Meter = metrics.meter("get-requests", "requests")
+
+  private[this] val postRequests: Meter = metrics.meter("post-requests", "requests")
+
+
+  def post(endpoint: String) = {
+    // do stuff
+    postRequests.mark()
+  }
+
+  def get(endpoint: String) = {
+    // do stuff
+    getRequests.mark()
   }
 
 }
