@@ -23,21 +23,17 @@ object Metrics extends App {
    *
    * It is build into the {{{core}}} module
    */
-  val consoleReporter: ConsoleReporter = ConsoleReporter.forRegistry(metricRegistry)
+  ConsoleReporter.forRegistry(metricRegistry)
     .convertRatesTo(TimeUnit.SECONDS)
     .convertDurationsTo(TimeUnit.MILLISECONDS)
-    .build()
-
-  // should expose values every 10 seconds
-  consoleReporter.start(10, TimeUnit.SECONDS)
+    .build().start(10, TimeUnit.SECONDS)
 
   /**
    * The {{JmxReporter}} will make the metrics available to JConsole or VisualVM (if you install the MBeans plugin).
    *
    * VisualVM can even graph the data for that property.
    */
-  val jmxReporter: JmxReporter = JmxReporter.forRegistry(metricRegistry).build()
-  jmxReporter.start()
+  JmxReporter.forRegistry(metricRegistry).build().start()
 
   //
   // Metrics
