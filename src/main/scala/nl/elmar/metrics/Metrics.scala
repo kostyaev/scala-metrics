@@ -50,7 +50,7 @@ object Metrics extends App {
    * A counter is a specific type of {{{Gauge}}} for {{{AtomicLong}}} instances. For instance you want to measure the
    * number of cache evictions
    */
-  val evictions: Counter = metricRegistry.counter(MetricRegistry.name(classOf[HealthCheckDemo], "cache-evictions"))
+  val evictions: Counter = metricRegistry.counter(MetricRegistry.name(classOf[HealthCheckExample], "cache-evictions"))
 
   /** produce some data */
   def run() {
@@ -58,6 +58,8 @@ object Metrics extends App {
     new TimerExample().longRunningInstrumentedMethod()
 
     new RandomNumberGaugeExample().fetchingRandomNumber()
+
+    new HealthCheckExample().check()
 
     evictions.inc()
     Thread.sleep(1500)
@@ -108,20 +110,17 @@ class TimerExample extends Instrumented {
  */
 class RandomNumberGaugeExample() extends Instrumented {
 
-  def fetchingRandomNumber() = {
-
-
+  def fetchingRandomNumber(): Int = {
     metrics.gauge("random-number") {
-      new
-          Random().nextInt() % 1000
-    }
+      new Random().nextInt() % 1000
+    }.value
   }
 }
 
 /**
  * A health check for your service or application
  */
-class HealthCheckDemo extends Checked {
+class HealthCheckExample extends Checked {
 
   def check(): HealthCheck = {
     healthCheck("database") {
@@ -132,6 +131,5 @@ class HealthCheckDemo extends Checked {
       }
     }
   }
-
 
 }
