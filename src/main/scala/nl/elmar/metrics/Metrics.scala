@@ -4,14 +4,17 @@ import com.codahale.metrics.health.HealthCheck
 import java.util.concurrent.TimeUnit
 import java.util.Random
 import com.codahale.metrics.{JmxReporter, ConsoleReporter, MetricRegistry}
-import nl.grons.metrics.scala.Timer
+import nl.grons.metrics.scala.{InstrumentedBuilder, CheckedBuilder, Timer}
 
 import com.codahale.metrics.Counter
 
 object Metrics extends App {
 
-  /** Registry. Application wide */
-  val metrics = new MetricRegistry()
+  /** The application wide metrics registry. */
+  val metricRegistry = new com.codahale.metrics.MetricRegistry()
+  /** The application wide health check registry. */
+  val healthCheckRegistry = new com.codahale.metrics.health.HealthCheckRegistry();
+
 
   // Reporter
 
@@ -20,7 +23,7 @@ object Metrics extends App {
    *
    * It is build into the {{{core}}} module
    */
-  val consoleReporter: ConsoleReporter = ConsoleReporter.forRegistry(metrics)
+  val consoleReporter: ConsoleReporter = ConsoleReporter.forRegistry(metricRegistry)
     .convertRatesTo(TimeUnit.SECONDS)
     .convertDurationsTo(TimeUnit.MILLISECONDS)
     .build()
@@ -33,7 +36,7 @@ object Metrics extends App {
    *
    * VisualVM can even graph the data for that property.
    */
-  val jmxReporter: JmxReporter = JmxReporter.forRegistry(metrics).build()
+  val jmxReporter: JmxReporter = JmxReporter.forRegistry(metricRegistry).build()
   jmxReporter.start()
 
   //
@@ -51,7 +54,7 @@ object Metrics extends App {
    * A counter is a specific type of {{{Gauge}}} for {{{AtomicLong}}} instances. For instance you want to measure the
    * number of cache evictions
    */
-  val evictions: Counter = metrics.counter(MetricRegistry.name(classOf[HealthCheckDemo], "cache-evictions"))
+  val evictions: Counter = metricRegistry.counter(MetricRegistry.name(classOf[HealthCheckDemo], "cache-evictions"))
 
   /** produce some data */
   def run() {
@@ -80,8 +83,15 @@ object Metrics extends App {
 /**
  * Trait that passes {{{metricsRegistry}}} around
  */
-trait Instrumented extends nl.grons.metrics.scala.InstrumentedBuilder {
-  val metricRegistry = Metrics.metrics
+trait Instrumented extends InstrumentedBuilder {
+  val metricRegistry = Metrics.metricRegistry
+}
+
+/**
+ * Trait that passes {{{healthCheckRegistry}}} around
+ */
+trait Checked extends CheckedBuilder {
+  val registry = Metrics.healthCheckRegistry
 }
 
 /**
@@ -115,12 +125,17 @@ class RandomNumberGaugeExample() extends Instrumented {
 /**
  * A health check for your service or application
  */
-class HealthCheckDemo extends HealthCheck {
+class HealthCheckDemo extends Checked {
 
-  override def check(): HealthCheck.Result =
-    if (new Random().nextInt() % 2 == 0) {
-      HealthCheck.Result.unhealthy("EVEN Random")
-    } else {
-      HealthCheck.Result.healthy("ODD Random")
+  def check(): HealthCheck = {
+    healthCheck("database") {
+      if (new Random().nextInt() % 2 == 0) {
+        HealthCheck.Result.unhealthy("EVEN Random")
+      } else {
+        HealthCheck.Result.healthy("ODD Random")
+      }
     }
+  }
+
+
 }
