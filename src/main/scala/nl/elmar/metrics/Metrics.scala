@@ -10,7 +10,13 @@ object Metrics extends App {
   /** Registry. Application wide */
   val metrics = new MetricRegistry()
 
-  /** Reporter **/
+  // Reporter
+
+  /**
+   * The {{{ConsoleReporter}}} will report the event to {{{StdOut}}}
+   *
+   * It is build into the {{{core}}} module
+   */
   val reporter: ConsoleReporter = ConsoleReporter.forRegistry(metrics)
     .convertRatesTo(TimeUnit.SECONDS)
     .convertDurationsTo(TimeUnit.MILLISECONDS)
