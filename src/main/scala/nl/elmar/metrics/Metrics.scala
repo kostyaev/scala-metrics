@@ -1,7 +1,7 @@
 package nl.elmar.metrics
 
 import com.codahale.metrics.health.HealthCheck
-import com.codahale.metrics.{Counter, Timer, ConsoleReporter, MetricRegistry}
+import com.codahale.metrics._
 import java.util.concurrent.TimeUnit
 import java.util.Random
 
@@ -13,15 +13,25 @@ object Metrics extends App {
   // Reporter
 
   /**
-   * The {{{ConsoleReporter}}} will report the event to {{{StdOut}}}
+   * The {{{ConsoleReporter}}} will report the metrics to {{{StdOut}}}
    *
    * It is build into the {{{core}}} module
    */
-  val reporter: ConsoleReporter = ConsoleReporter.forRegistry(metrics)
+  val consoleReporter: ConsoleReporter = ConsoleReporter.forRegistry(metrics)
     .convertRatesTo(TimeUnit.SECONDS)
     .convertDurationsTo(TimeUnit.MILLISECONDS)
     .build()
-  reporter.start(10, TimeUnit.SECONDS)
+
+  // should expose values every 10 seconds
+  consoleReporter.start(10, TimeUnit.SECONDS)
+
+  /**
+   * The {{JmxReporter}} will make the metrics available to JConsole or VisualVM (if you install the MBeans plugin).
+   *
+   * VisualVM can even graph the data for that property.
+   */
+  val jmxReporter: JmxReporter = JmxReporter.forRegistry(metrics).build()
+  jmxReporter.start()
 
   //
   // Metrics
@@ -61,7 +71,7 @@ object Metrics extends App {
     Thread.sleep(1500)
   }
 
-  /** Run the app */
+  // run the app
   run()
 }
 
