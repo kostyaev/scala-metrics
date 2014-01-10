@@ -77,15 +77,18 @@ object Metrics extends App {
 
 }
 
+/**
+ * Trait that passes {{{metricsRegistry}}} around
+ */
 trait Instrumented extends nl.grons.metrics.scala.InstrumentedBuilder {
   val metricRegistry = Metrics.metrics
 }
 
+/**
+ * A timer measures the rate how often a piece of code was called but also the distribution of the duration
+ */
 class TimerExample extends Instrumented {
 
-  /**
-   * A timer measures the rate how often a piece of code was called but also the distribution of the duration
-   */
   private[this] val running: Timer = metrics.timer("calculation-duration")
 
   /** some long running calculation */
@@ -94,9 +97,14 @@ class TimerExample extends Instrumented {
   }
 }
 
+/**
+ * A gauge is the most simple metrics. It just returns a single value.
+ */
 class RandomNumberGaugeExample() extends Instrumented {
 
   def fetchingRandomNumber() = {
+
+
     metrics.gauge("random-number") {
       new
           Random().nextInt() % 1000
@@ -104,8 +112,9 @@ class RandomNumberGaugeExample() extends Instrumented {
   }
 }
 
-
-
+/**
+ * A health check for your service or application
+ */
 class HealthCheckDemo extends HealthCheck {
 
   override def check(): HealthCheck.Result =
