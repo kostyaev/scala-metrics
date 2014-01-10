@@ -4,7 +4,7 @@ import com.codahale.metrics.health.HealthCheck
 import java.util.concurrent.TimeUnit
 import java.util.Random
 import com.codahale.metrics.{JmxReporter, ConsoleReporter}
-import nl.grons.metrics.scala.{InstrumentedBuilder, CheckedBuilder, Timer, Counter}
+import nl.grons.metrics.scala.{InstrumentedBuilder, CheckedBuilder, Timer, Counter, Histogram}
 
 
 object Metrics extends App {
@@ -49,7 +49,12 @@ object Metrics extends App {
 
     new RandomNumberGaugeExample().fetchingRandomNumber()
 
+    // TODO print healthCheckResults
     new HealthCheckExample().check()
+
+    val histogramExample = new SearchResultsHistogramExample()
+    histogramExample.search("foo")
+    histogramExample.search("bar")
 
     val cache = new CacheCounterExample()
     cache.put("foo", "bar")
@@ -124,6 +129,30 @@ class CacheCounterExample() extends Instrumented {
 
   def remove(key: String) = {
     counter.dec()
+  }
+
+}
+
+/**
+ * Histogram metrics allow you to measure not just easy things like the min, mean, max, and standard deviation of
+ * values, but also quantiles like the median or 95th percentile.
+ *
+ * Traditionally, the way the median (or any other quantile) is calculated is to take the entire data set, sort it,
+ * and take the value in the middle (or 1% from the end, for the 99th percentile). This of course does not work for
+ * high-throughput, low-latency services.
+ *
+ * The solution is a technique is called _reservoir sampling_.
+ *
+ * Metrics provides a number of different Reservoir implementations, each of which is useful.
+ */
+class SearchResultsHistogramExample() extends Instrumented {
+
+  private[this] val resultCounts: Histogram = metrics.histogram("result-counts")
+
+  def search(key: String) {
+    // search for stuff
+    val numberOfResults = new Random().nextInt() % 50
+    resultCounts += numberOfResults
   }
 
 }
