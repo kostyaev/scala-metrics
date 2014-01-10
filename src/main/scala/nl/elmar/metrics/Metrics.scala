@@ -3,20 +3,16 @@ package nl.elmar.metrics
 import com.codahale.metrics.health.HealthCheck
 import java.util.concurrent.TimeUnit
 import java.util.Random
-import com.codahale.metrics.{JmxReporter, ConsoleReporter, MetricRegistry}
-import nl.grons.metrics.scala.{InstrumentedBuilder, CheckedBuilder, Timer}
+import com.codahale.metrics.{JmxReporter, ConsoleReporter}
+import nl.grons.metrics.scala.{InstrumentedBuilder, CheckedBuilder, Timer, Counter}
 
-import com.codahale.metrics.Counter
 
 object Metrics extends App {
 
   /** The application wide metrics registry. */
   val metricRegistry = new com.codahale.metrics.MetricRegistry()
   /** The application wide health check registry. */
-  val healthCheckRegistry = new com.codahale.metrics.health.HealthCheckRegistry();
-
-
-  // Reporter
+  val healthCheckRegistry = new com.codahale.metrics.health.HealthCheckRegistry()
 
   /**
    * The {{{ConsoleReporter}}} will report the metrics to {{{StdOut}}}
@@ -46,12 +42,6 @@ object Metrics extends App {
   // they will all start with {{{nl.elmar.metrics}}}
   //
 
-  /**
-   * A counter is a specific type of {{{Gauge}}} for {{{AtomicLong}}} instances. For instance you want to measure the
-   * number of cache evictions
-   */
-  val evictions: Counter = metricRegistry.counter(MetricRegistry.name(classOf[HealthCheckExample], "cache-evictions"))
-
   /** produce some data */
   def run() {
 
@@ -61,13 +51,16 @@ object Metrics extends App {
 
     new HealthCheckExample().check()
 
-    evictions.inc()
+    val cache = new CacheCounterExample()
+    cache.put("foo", "bar")
     Thread.sleep(1500)
-    evictions.inc(3)
+    cache.put("foo", "bar")
+    cache.put("foo", "bar")
+    cache.put("foo", "bar")
     Thread.sleep(1500)
-    evictions.dec()
+    cache.remove("foo")
     Thread.sleep(1500)
-    evictions.dec(4)
+    cache.remove("foo")
     Thread.sleep(1500)
   }
 
@@ -115,6 +108,24 @@ class RandomNumberGaugeExample() extends Instrumented {
       new Random().nextInt() % 1000
     }.value
   }
+}
+
+/**
+ * A counter is a specific type of {{{Gauge}}} for {{{AtomicLong}}} instances. For instance you want to measure the
+ * number of cache evictions
+ */
+class CacheCounterExample() extends Instrumented {
+
+  private[this] val counter: Counter = metrics.counter("cache-evictions")
+
+  def put(key: String, value: String) = {
+    counter.inc()
+  }
+
+  def remove(key: String) = {
+    counter.dec()
+  }
+
 }
 
 /**
