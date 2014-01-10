@@ -58,18 +58,22 @@ object Metrics extends App {
 
     new TimerExample().longRunningInstrumentedMethod()
 
+    new RandomNumberGaugeExample().fetchingRandomNumber()
+
     evictions.inc()
     Thread.sleep(1500)
     evictions.inc(3)
     Thread.sleep(1500)
     evictions.dec()
     Thread.sleep(1500)
-    evictions.dec(2)
+    evictions.dec(4)
     Thread.sleep(1500)
   }
 
   // run the app
   run()
+
+  while(true){}
 
 }
 
@@ -89,6 +93,18 @@ class TimerExample extends Instrumented {
     Thread.sleep(5000)
   }
 }
+
+class RandomNumberGaugeExample() extends Instrumented {
+
+  def fetchingRandomNumber() = {
+    metrics.gauge("random-number") {
+      new
+          Random().nextInt() % 1000
+    }
+  }
+}
+
+
 
 class HealthCheckDemo extends HealthCheck {
 
