@@ -56,7 +56,7 @@ object Metrics extends App {
   /** produce some data */
   def run() {
 
-    new ArithmeticDemoOperation().calculateSomeMagic()
+    new TimerExample().longRunningInstrumentedMethod()
 
     evictions.inc()
     Thread.sleep(1500)
@@ -77,7 +77,7 @@ trait Instrumented extends nl.grons.metrics.scala.InstrumentedBuilder {
   val metricRegistry = Metrics.metrics
 }
 
-class ArithmeticDemoOperation extends Instrumented {
+class TimerExample extends Instrumented {
 
   /**
    * A timer measures the rate how often a piece of code was called but also the distribution of the duration
@@ -85,7 +85,7 @@ class ArithmeticDemoOperation extends Instrumented {
   private[this] val running: Timer = metrics.timer("calculation-duration")
 
   /** some long running calculation */
-  def calculateSomeMagic() = running.time {
+  def longRunningInstrumentedMethod() = running.time {
     Thread.sleep(5000)
   }
 }
