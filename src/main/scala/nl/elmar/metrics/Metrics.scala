@@ -27,7 +27,16 @@ object Metrics extends App {
   // The full name will be resolved using the class. As all the classes in this example live in {{{nl.elmar.metrics}}}
   // they will all start with {{{nl.elmar.metrics}}}
   //
+
+  /**
+   * A counter is a specific type of {{{Gauge}}} for {{{AtomicLong}}} instances. For instance you want to measure the
+   * number of cache evictions
+   */
   val evictions: Counter = metrics.counter(MetricRegistry.name(classOf[HealthCheckDemo], "cache-evictions"))
+
+  /**
+   * A timer measures the rate how often a piece of code was called but also the distribution of the duration
+   */
   val request: Timer = metrics.timer(MetricRegistry.name(classOf[ArithmeticDemoOperation], "calculation-duration"))
 
   /** produce some data */
