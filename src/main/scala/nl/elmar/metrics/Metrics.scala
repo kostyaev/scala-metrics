@@ -1,3 +1,5 @@
+package nl.elmar.metrics
+
 import com.codahale.metrics.health.HealthCheck
 import com.codahale.metrics.{Counter, Timer, ConsoleReporter, MetricRegistry}
 import java.util.concurrent.TimeUnit
@@ -15,13 +17,22 @@ object Metrics extends App {
     .build()
   reporter.start(10, TimeUnit.SECONDS)
 
-  /** Metrics **/
+  //
+  // Metrics
+  //
+  // Each metric has a unique name, which is a simple dotted name, like {{{com.example.Queue.size}}}.
+  //
+  // This flexibility allows you to encode a wide variety of context directly into a metric’s name
+  //
+  // The full name will be resolved using the class. As all the classes in this example live in {{{nl.elmar.metrics}}}
+  // they will all start with {{{nl.elmar.metrics}}}
+  //
   val evictions: Counter = metrics.counter(MetricRegistry.name(classOf[HealthCheckDemo], "cache-evictions"))
-  val request: Timer  = metrics.timer(MetricRegistry.name(classOf[ArithmeticDemoOperation], "calculation-duration"))
+  val request: Timer = metrics.timer(MetricRegistry.name(classOf[ArithmeticDemoOperation], "calculation-duration"))
 
   /** produce some data */
   def run() {
-    val ctx: Timer.Context  = request.time()
+    val ctx: Timer.Context = request.time()
     new ArithmeticDemoOperation().calculateSomeMagic()
     ctx.stop()
 
